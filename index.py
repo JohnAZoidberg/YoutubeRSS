@@ -21,10 +21,6 @@ print '<?xml version="1.0" encoding="UTF-8" ?>'
 def buildUrl(request):
     return baseurl + request + api_suffix
 
-def youtubeToMp3(youtubeId):
-    baseurl = converturl + youtubeId
-    return ("1", baseurl)
-
 def formatDate(date):
     return date.strftime("%a, %d %b %Y %H:%M:%S GMT")
 
@@ -47,7 +43,7 @@ def getFirstDate(response):
     return formatDateString(response['items'][0]['snippet']['publishedAt'])
 
 def getVideos(playlistId):
-    url = buildUrl('/playlistItems?part=snippet&maxResults=50&playlistId=' + playlistId)
+    url = buildUrl('/playlistItems?part=snippet%2CcontentDetails&maxResults=50&playlistId=' + playlistId)
     vids = []
     next_page = ''
     while True:
@@ -65,29 +61,43 @@ def getVideos(playlistId):
     return vids
 
 name = form.getfirst('user')
-url = buildUrl('/channels?forUsername=' + name + '&part=snippet%2CcontentDetails')
-response = urllib.urlopen(url).read()
-itemJson = json.loads(response)
-channel = itemJson['items'][0]
-#print response
-id = channel['id']
-thumbnail = channel['snippet']['thumbnails']['high']['url']
-description = channel['snippet']['description']
-title = channel['snippet']['title']
-uploadPlaylist = channel['contentDetails']['relatedPlaylists']['uploads']
+if name is not None:
+    url = buildUrl('/channels?part=snippet%2CcontentDetails&forUsername=' + name)
+    response = urllib.urlopen(url).read()
+    itemJson = json.loads(response)
 
-email = 'shop@theschooloflife.com'
-date = getFirstDate(itemJson)
+    channel = itemJson['items'][0]
+    channelId = channel['id']
+    thumbnail = channel['snippet']['thumbnails']['high']['url']
+    description = channel['snippet']['description']
+    title = channel['snippet']['title']
+    uploadPlaylist = channel['contentDetails']['relatedPlaylists']['uploads']
+    date = getFirstDate(itemJson)
+    self_link = 'http://pi.danielschaefer.me/youtuberss/index_raspbian.py?user=' + name
+    podcastLink = 'https://www.youtube.com/user/' + name
+else:
+    uploadPlaylist = form.getfirst('playlist')
+    url = buildUrl('/playlists?part=snippet&id=' + uploadPlaylist)
+    response = urllib.urlopen(url).read()
+    itemJson = json.loads(response)
+    playlist = itemJson['items'][0]['snippet']
+
+    title = playlist['title']
+    description = playlist['description']
+    thumbnail = playlist['thumbnails']['high']['url']
+    self_link = 'http://pi.danielschaefer.me/youtuberss/index_raspbian.py?playlist=' + uploadPlaylist
+    podcastLink = 'https://www.youtube.com/playlist?list=' + uploadPlaylist
+
 rss = PodcastFeed(
     title=title,
     desc=description,
     lng='en-us',
     copyright=title + " " + datetime.date.today().strftime("%Y"),
-    link='http://pi.danielschaefer.me/youtuberss/index_raspbian.py?user=' + name,
+    link=self_link,
     lastBuildDate=formatDate(datetime.date.today()),#date,#'Mon, 25 Apr 2016 23:03:00 GMT', # TODO sort the videos and get most recent date
     image=thumbnail,
     category='News & Politics', # TODO check if it is optional and leave it out or get it from the video
-    channelName=name
+    podcastLink=podcastLink
 )
 
 for vid in getVideos(uploadPlaylist):
@@ -95,17 +105,15 @@ for vid in getVideos(uploadPlaylist):
     date = formatDateString(snippet['publishedAt'])
     title = snippet['title']
     id = vid['snippet']['resourceId']['videoId']
-    size, url = youtubeToMp3(id)
-    if url is None:
-        continue
+    url = converturl + id
     description = snippet['description']
 
     rss.addItem(
         title=title,
         link=url,
-        size=size,
+        episodeLink='https://www.youtube.com/watch?v=' + id,
         desc=description,
-        pubDate=date#'Mon, 25 Apr 2016 19:03:00 GMT'
+        pubDate=date,#'Mon, 25 Apr 2016 19:03:00 GMT',
     )
 
-print rss.to_string()
+#print rss.to_string()

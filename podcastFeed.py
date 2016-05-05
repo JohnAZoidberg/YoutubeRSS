@@ -18,7 +18,7 @@ class PodcastFeed():
         lastBuildDate=None, # TODO format date
         image=None,
         category='',
-        channelName=None
+        podcastLink=None
     ):
         # TODO check if args are None and throw error
         # TODO HTMLencode all inputs
@@ -37,7 +37,7 @@ class PodcastFeed():
         copyrightE = SubElement(self.channelE, 'copyright')
         copyrightE.text = copyright
         linkE = SubElement(self.channelE, 'link')
-        linkE.text = 'https://www.youtube.com/user/' + channelName
+        linkE.text = podcastLink
         atomLinkE = SubElement(self.channelE, buildNS(atom, 'link'), {'href': link, 'rel': 'self', 'type': 'application/rss+xml'})
         lastBuildDateE = SubElement(self.channelE, 'lastBuildDate')
         lastBuildDateE.text = lastBuildDate
@@ -55,17 +55,17 @@ class PodcastFeed():
     def addItem(self,
         title=None,
         link=None,
+        episodeLink=None,
         size="1", # TODO should be figured out automatically
         desc=None,
-        pubDate=None
+        pubDate=None,
+        duration=None
     ):
-
-
         itemE = SubElement(self.channelE, 'item')
         iTitleE = SubElement(itemE, 'title')
         iTitleE.text = title
         iLinkE = SubElement(itemE, 'link')
-        iLinkE.text = link
+        iLinkE.text = episodeLink
         iGuidE = SubElement(itemE, 'guid')
         iGuidE.text = link
         iEnclosureE = SubElement(itemE, 'enclosure', {'url': link, 'length': size, 'type': 'audio/mp4'})
@@ -77,6 +77,8 @@ class PodcastFeed():
         iCategoryE.text = 'Podcasts'
         iPubDate = SubElement(itemE, 'pubDate')
         iPubDate.text = pubDate
+        # TODO iDurationE = SubElement(itemE, buildNS(itunes, 'duration'))
+        # TODO iDurationE.text = duration
 
     def to_string(self):
         return tostring(self.root)
