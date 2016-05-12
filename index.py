@@ -9,10 +9,11 @@ import datetime
 
 cgitb.enable()
 form = cgi.FieldStorage()
-api_key = 'AIzaSyC-7Dy0KgpvvAK69BtdNJr5U2mJV2aN6Ew'
+api_key = 'YOUR_YOUTUBE_API_KEY' # YOU NEED TO CHANGE THIS TO YOUR ACTUAL API KEY
 api_suffix = '&key=' + api_key
 baseurl = 'https://www.googleapis.com/youtube/v3'
-converturl = 'http://pi.jzoid.xyz/youtuberss/converter_raspbian.py?v='
+basefolder = 'http://example.com/youtuberss/' # YOU NEED TO CHANGE THIS TO THE FOLDER YOUR FILES ARE LOCATED IN
+converturl = basefolder + 'converter.py?v='
 
 print "Content-Type: text/xml;charset=utf-8"
 print
@@ -73,7 +74,7 @@ if name is not None:
     title = channel['snippet']['title']
     uploadPlaylist = channel['contentDetails']['relatedPlaylists']['uploads']
     date = getFirstDate(itemJson)
-    self_link = 'http://pi.danielschaefer.me/youtuberss/index_raspbian.py?user=' + name
+    self_link = basefolder + 'index.py?user=' + name
     podcastLink = 'https://www.youtube.com/user/' + name
 else:
     uploadPlaylist = form.getfirst('playlist')
@@ -85,7 +86,7 @@ else:
     title = playlist['title']
     description = playlist['description']
     thumbnail = playlist['thumbnails']['high']['url']
-    self_link = 'http://pi.danielschaefer.me/youtuberss/index_raspbian.py?playlist=' + uploadPlaylist
+    self_link = basefolder + 'index.py?playlist=' + uploadPlaylist
     podcastLink = 'https://www.youtube.com/playlist?list=' + uploadPlaylist
 
 rss = PodcastFeed(
@@ -116,4 +117,4 @@ for vid in getVideos(uploadPlaylist):
         pubDate=date,#'Mon, 25 Apr 2016 19:03:00 GMT',
     )
 
-#print rss.to_string()
+print rss.to_string()
