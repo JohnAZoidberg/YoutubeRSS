@@ -16,7 +16,7 @@ api_suffix = '&key=' + api_key
 baseurl = 'https://www.googleapis.com/youtube/v3'
 # YOU NEED TO CHANGE THIS TO THE FOLDER YOUR FILES ARE LOCATED IN
 basefolder = 'http://youtuberss.danielschaefer.me/'
-converturl = basefolder + 'converter.py?v='
+converturl = basefolder + 'converter/file/'
 
 
 def build_url(request):
@@ -64,7 +64,7 @@ def get_user_data(name):
     podcast["thumbnail"] = channel['snippet']['thumbnails']['high']['url']
     podcast["title"] = channel['snippet']['title']
     podcast["publish_date"] = "" # WHAT AM I GONNA PUT HERE?
-    podcast["description "] = channel['snippet']['description']
+    podcast["description"] = channel['snippet']['description']
     upload_playlist = \
         channel['contentDetails']['relatedPlaylists']['uploads']
     date = get_first_date(itemJson)
