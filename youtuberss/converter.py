@@ -1,19 +1,19 @@
 #!/usr/bin/python
 import pafy
-from flask import Blueprint, redirect
+from flask import Blueprint, redirect, jsonify
 
 
 def get_video_info(video_id, action="location"):
     baseurl = "https://www.youtube.com/watch?v="
     url = baseurl + video_id
     video = pafy.new(url)
-    #print video.duration
-    #print video.length
+    print video.duration
+    print video.length
     for s in video.audiostreams:
         if s.extension == 'm4a':
             if action == 'size':
-                return '{"id": "%s", "size": "%s"}' \
-                       .format(video_id, str(s.get_filesize()))
+                return {"id": video_id, "size": str(s.get_filesize()),
+                        "duration": video.duration}
             else:
                 return s.url
 
@@ -32,4 +32,4 @@ def get_file(video_id):
 @converter_page.route('/converter/size/<video_id>', methods=['GET'])
 def get_size(video_id):
     # TODO handle empty video_id
-    return get_video_info(video_id, action="size")
+    return jsonify(get_video_info(video_id, action="size"))

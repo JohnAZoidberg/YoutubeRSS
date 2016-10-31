@@ -1,15 +1,12 @@
 #!/usr/bin/python
-import cgitb
-import cgi
 import urllib
 import urllib2
 import json
-import datetime
+import sqlite3
 
+import converter
 import jinja_filters
 
-cgitb.enable()
-form = cgi.FieldStorage()
 #  YOU NEED TO CHANGE THIS TO YOUR ACTUAL API KEY
 api_key = 'AIzaSyC-7Dy0KgpvvAK69BtdNJr5U2mJV2aN6Ew'
 api_suffix = '&key=' + api_key
@@ -63,7 +60,6 @@ def get_user_data(name):
     podcast["url"] = 'https://www.youtube.com/user/' + name
     podcast["thumbnail"] = channel['snippet']['thumbnails']['high']['url']
     podcast["title"] = channel['snippet']['title']
-    podcast["publish_date"] = "" # WHAT AM I GONNA PUT HERE?
     podcast["description"] = channel['snippet']['description']
     upload_playlist = \
         channel['contentDetails']['relatedPlaylists']['uploads']
@@ -82,12 +78,19 @@ def get_playlist_data(uploadPlaylist):
         uploadPlaylist
     podcast["thumbnail"] = playlist['thumbnails']['high']['url']
     podcast["title"] = playlist['title']
-    podcast["publish_date"] = "" # WHAT AM I GONNA PUT HERE?
     podcast["description"] = playlist['description']
     return podcast, uploadPlaylist
 
 
 def get_video_information(upload_playlist):
+    conn = sqlite3.connect('/home/zoid/videos.db')
+    conn.execute('''
+            CREATE TABLE IF NOT EXISTS videos
+                (id       VARCHAR PRIMARY KEY NOT NULL,
+                size     VARCHAR             NOT NULL,
+                duration INT                 NOT NULL
+            );''')
+    conn.commit()
     vids = []
     for vid in get_videos(upload_playlist):
         video = {}
@@ -97,6 +100,33 @@ def get_video_information(upload_playlist):
         id = vid['snippet']['resourceId']['videoId']
         video["file_url"] = converturl + id
         video["description"] = snippet['description']
-        video["url"] = 'https://www.youtube.com/watch?v=' + id,
+        video["url"] = 'https://www.youtube.com/watch?v=' + id
+
+        # get size and duration
+        try:
+            info = get_cached_video_info(id, conn)
+        except IOError:
+            continue
+        # cache this in an sqlite3 db
+        video["length"] = info["size"]
+        video["duration"] = info["duration"]
         vids.append(video)
+    conn.commit()
+    conn.close()
     return vids
+
+def get_cached_video_info(video_id, conn):
+        cur = conn.execute('''SELECT id, size, duration FROM videos
+                              WHERE id = ?''', (video_id,))
+        video = cur.fetchone()
+        if video is None:
+            info = converter.get_video_info(video_id, action="size")
+            conn.execute(
+                '''INSERT INTO videos (id, size, duration)
+                   VALUES (?, ?, ?)'''
+                , (video_id, info['size'], info["duration"])
+            )
+            return info
+        else:
+            return {"id": video_id, "size": video[1],
+                    "duration": video[2]}

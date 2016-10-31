@@ -13,7 +13,6 @@ def format_date_string(youtubeDate):
     if not dateSplit:
         return youtubeDate
     year = dateSplit[0]
-    print youtubeDate, dateSplit
     month = dateSplit[1]
     (day, times) = dateSplit[2].split('T')
     timeSplit = times.split(':')
