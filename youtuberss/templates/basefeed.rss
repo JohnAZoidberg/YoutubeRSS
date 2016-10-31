@@ -6,11 +6,11 @@
   <channel>
     <link>{{ podcast.url }}</link>
     <language>en-us</language><!-- not really general -->
-    <image>
-            <url>{{ podcast.thumbnail }}</url>
+    <!--<image>
+      <url>{{ podcast.thumbnail }}</url>
       <title>Playlist thumbnail</title>
       <link>{{ podcast.url }}</link>
-    </image>
+    </image>-->
     <itunes:image href="{{ podcast.thumbnail }}" />
     <title>{{ podcast.title|e }}</title>
     <itunes:explicit>no</itunes:explicit>

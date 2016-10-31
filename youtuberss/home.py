@@ -6,7 +6,7 @@ sys.setdefaultencoding("utf8")
 
 import datetime
 
-from flask import Blueprint, render_template, jsonify, Response
+from flask import Blueprint, render_template, jsonify, Response, request
 
 import fetcher
 import jinja_filters
@@ -16,8 +16,9 @@ home_page = Blueprint('home_page', __name__, template_folder='templates')
 
 @home_page.route('/user/<username>', methods=['GET'])
 def serve_channel_podcast(username):
+    limit = request.args.get("limit")
     podcast, upload_playlist = fetcher.get_user_data(username)
-    podcast["episodes"] = fetcher.get_video_information(upload_playlist)
+    podcast["episodes"] = fetcher.get_video_information(upload_playlist, limit)
 
     xml = render_template(
         'basefeed.rss',
@@ -30,8 +31,9 @@ def serve_channel_podcast(username):
 
 @home_page.route('/list/<list_id>', methods=['GET'])
 def serve_playlist_podcast(list_id):
+    limit = request.args.get("limit")
     podcast, upload_playlist = fetcher.get_playlist_data(list_id)
-    podcast["episodes"] = fetcher.get_video_information(upload_playlist)
+    podcast["episodes"] = fetcher.get_video_information(upload_playlist, limit)
 
     xml = render_template(
         'basefeed.rss',

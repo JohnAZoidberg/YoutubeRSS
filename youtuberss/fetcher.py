@@ -25,13 +25,15 @@ def get_first_date(response):
         response['items'][0]['snippet']['publishedAt'])
 
 
-def get_videos(playlistId):
+def get_videos(playlistId, limit=None):
     url = build_url('/playlistItems' +
                     '?part=snippet%2CcontentDetails' +
                     '&maxResults=50&playlistId=' + playlistId)
     vids = []
     next_page = ''
-    while True:
+    counter = 0
+    limit = None if limit is None else int(limit)
+    while (limit is None or counter < limit):
         # We are limited to 50 results.
         # If the user subscribed to more than 50 channels
         # we have to make multiple requests here
@@ -41,6 +43,9 @@ def get_videos(playlistId):
         vidsBatch = data['items']
         for vid in vidsBatch:
             vids.append(vid)
+            counter += 1
+            if limit is not None and counter >= limit:
+                break
         try:  # loop until there are no more pages
             next_page = '&pageToken=' + data['nextPageToken']
         except KeyError:
@@ -82,8 +87,8 @@ def get_playlist_data(uploadPlaylist):
     return podcast, uploadPlaylist
 
 
-def get_video_information(upload_playlist):
-    conn = sqlite3.connect('/home/zoid/videos.db')
+def get_video_information(upload_playlist, limit=None):
+    conn = sqlite3.connect('/home/zoid/youtuberss/youtuberss/videos.db')
     conn.execute('''
             CREATE TABLE IF NOT EXISTS videos
                 (id       VARCHAR PRIMARY KEY NOT NULL,
@@ -92,7 +97,7 @@ def get_video_information(upload_playlist):
             );''')
     conn.commit()
     vids = []
-    for vid in get_videos(upload_playlist):
+    for vid in get_videos(upload_playlist, limit):
         video = {}
         snippet = vid['snippet']
         video["published_date"] = jinja_filters.format_date_string(snippet['publishedAt'])
@@ -107,7 +112,6 @@ def get_video_information(upload_playlist):
             info = get_cached_video_info(id, conn)
         except IOError:
             continue
-        # cache this in an sqlite3 db
         video["length"] = info["size"]
         video["duration"] = info["duration"]
         vids.append(video)
