@@ -5,61 +5,44 @@ import json
 import sqlite3
 
 import converter
-import jinja_filters
+from config import config
 
-#  YOU NEED TO CHANGE THIS TO YOUR ACTUAL API KEY
-api_key = 'AIzaSyC-7Dy0KgpvvAK69BtdNJr5U2mJV2aN6Ew'
+api_key = config["api_key"]
 api_suffix = '&key=' + api_key
 baseurl = 'https://www.googleapis.com/youtube/v3'
-# YOU NEED TO CHANGE THIS TO THE FOLDER YOUR FILES ARE LOCATED IN
-basefolder = 'http://youtuberss.danielschaefer.me/'
+basefolder = config["flask_root"]
 converturl = basefolder + 'converter/file/'
+database_path = config["db_path"]
 
 
-def build_url(request):
+def _build_url(request):
     return baseurl + request + api_suffix
 
 
-def get_first_date(response):
-    return jinja_filters.format_date_string(
-        response['items'][0]['snippet']['publishedAt'])
+def _extract_video_info(vid, conn):
+    video = {}
+    snippet = vid['snippet']
+    video["published_date"] = snippet['publishedAt']
+    video["title"] = snippet['title']
+    video["id"] = vid['snippet']['resourceId']['videoId']
+    video["file_url"] = converturl + video["id"]
+    video["description"] = snippet['description']
+    video["url"] = 'https://www.youtube.com/watch?v=' + video["id"]
 
-
-def get_videos(playlistId, limit=None):
-    url = build_url('/playlistItems' +
-                    '?part=snippet%2CcontentDetails' +
-                    '&maxResults=50&playlistId=' + playlistId)
-    vids = []
-    next_page = ''
-    counter = 0
-    limit = None if limit is None else int(limit)
-    while (limit is None or counter < limit):
-        # We are limited to 50 results.
-        # If the user subscribed to more than 50 channels
-        # we have to make multiple requests here
-        # which can only be fetched one after another.
-        response = urllib2.urlopen(url + next_page).read()
-        data = json.loads(response)
-        vidsBatch = data['items']
-        for vid in vidsBatch:
-            vids.append(vid)
-            counter += 1
-            if limit is not None and counter >= limit:
-                break
-        try:  # loop until there are no more pages
-            next_page = '&pageToken=' + data['nextPageToken']
-        except KeyError:
-            break
-    return vids
+    # get size and duration
+    info = _get_cached_video_info(video["id"], conn)
+    video["length"] = info["size"]
+    video["duration"] = info["duration"]
+    return video
 
 
 def get_user_data(name):
-    url = build_url('/channels?' +
-                   'part=snippet%2CcontentDetails&forUsername=' + name)
+    url = _build_url('/channels?' +
+                    'part=snippet%2CcontentDetails&forUsername=' + name)
     response = urllib.urlopen(url).read()
     itemJson = json.loads(response)
     channel = itemJson['items'][0]
-    channelId = channel['id']
+    # channelId = channel['id']
 
     podcast = {}
     podcast["url"] = 'https://www.youtube.com/user/' + name
@@ -68,12 +51,11 @@ def get_user_data(name):
     podcast["description"] = channel['snippet']['description']
     upload_playlist = \
         channel['contentDetails']['relatedPlaylists']['uploads']
-    date = get_first_date(itemJson)
     return podcast, upload_playlist
 
 
 def get_playlist_data(uploadPlaylist):
-    url = build_url('/playlists?part=snippet&id=' + uploadPlaylist)
+    url = _build_url('/playlists?part=snippet&id=' + uploadPlaylist)
     response = urllib.urlopen(url).read()
     itemJson = json.loads(response)
     playlist = itemJson['items'][0]['snippet']
@@ -87,8 +69,8 @@ def get_playlist_data(uploadPlaylist):
     return podcast, uploadPlaylist
 
 
-def get_video_information(upload_playlist, limit=None):
-    conn = sqlite3.connect('/home/zoid/youtuberss/youtuberss/videos.db')
+def get_videos(playlist_id, limit=None):
+    conn = sqlite3.connect(database_path)
     conn.execute('''
             CREATE TABLE IF NOT EXISTS videos
                 (id       VARCHAR PRIMARY KEY NOT NULL,
@@ -96,30 +78,53 @@ def get_video_information(upload_playlist, limit=None):
                 duration INT                 NOT NULL
             );''')
     conn.commit()
+    url = _build_url('/playlistItems' +
+                     '?part=snippet%2CcontentDetails' +
+                     '&maxResults=50&playlistId=' + playlist_id)
     vids = []
-    for vid in get_videos(upload_playlist, limit):
-        video = {}
-        snippet = vid['snippet']
-        video["published_date"] = jinja_filters.format_date_string(snippet['publishedAt'])
-        video["title"] = snippet['title']
-        id = vid['snippet']['resourceId']['videoId']
-        video["file_url"] = converturl + id
-        video["description"] = snippet['description']
-        video["url"] = 'https://www.youtube.com/watch?v=' + id
-
-        # get size and duration
-        try:
-            info = get_cached_video_info(id, conn)
-        except IOError:
-            continue
-        video["length"] = info["size"]
-        video["duration"] = info["duration"]
-        vids.append(video)
+    newest_date = None
+    next_page = ''
+    counter = 0
+    limit = None if limit is None else int(limit)
+    while (limit is None or counter < limit):
+        # We are limited to 50 results.
+        # If the user subscribed to more than 50 channels
+        # we have to make multiple requests here
+        # which can only be fetched one after another.
+        response = urllib2.urlopen(url + next_page).read()
+        data = json.loads(response)
+        vidsBatch = data['items']
+        for vid in vidsBatch:
+            try:
+                print "VideoId: ", vid['snippet']['resourceId']['videoId']
+                video = _extract_video_info(vid, conn)
+            except IOError:
+                continue
+            except:
+                print "VideoId: ", vid['snippet']['resourceId']['videoId']
+                conn.commit()
+                conn.close()
+                continue
+                # raise
+            print "VideoId: ", vid['snippet']['resourceId']['videoId']
+            vids.append(video)
+            if newest_date is None:
+                newest_date = video['published_date']
+            elif video['published_date'] > newest_date:
+                    newest_date = video['published_date']
+            counter += 1
+            if limit is not None and counter >= limit:
+                break
+        try:  # loop until there are no more pages
+            next_page = '&pageToken=' + data['nextPageToken']
+        except KeyError:
+            break
     conn.commit()
     conn.close()
-    return vids
+    return vids, newest_date
 
-def get_cached_video_info(video_id, conn):
+
+def _get_cached_video_info(video_id, conn):
         cur = conn.execute('''SELECT id, size, duration FROM videos
                               WHERE id = ?''', (video_id,))
         video = cur.fetchone()
@@ -127,8 +132,8 @@ def get_cached_video_info(video_id, conn):
             info = converter.get_video_info(video_id, action="size")
             conn.execute(
                 '''INSERT INTO videos (id, size, duration)
-                   VALUES (?, ?, ?)'''
-                , (video_id, info['size'], info["duration"])
+                   VALUES (?, ?, ?)''',
+                (video_id, info['size'], info["duration"])
             )
             return info
         else:

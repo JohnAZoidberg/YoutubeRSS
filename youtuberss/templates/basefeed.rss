@@ -15,7 +15,7 @@
     <title>{{ podcast.title|e }}</title>
     <itunes:explicit>no</itunes:explicit>
     <atom:link href="{{ podcast.url }}" rel="self" type="application/rss+xml" />
-    <lastBuildDate>{{ build_date }}</lastBuildDate>
+    <lastBuildDate>{{ build_date|format_date_string }}</lastBuildDate>
     <description>{{ podcast.description|cdata }}</description>
     <itunes:author>{{ podcast.title|e }}</itunes:author>
     <itunes:owner><itunes:name>{{ podcast.title|e }}</itunes:name></itunes:owner>
@@ -37,7 +37,7 @@
       <enclosure url="{{ item.file_url }}" type="audio/mp4" length="{{ item.length }}" />
       <guid>{{ item.file_url }}</guid>
       <itunes:duration>{{ item.duration }}</itunes:duration>
-      <pubDate>{{ item.published_date }}</pubDate>
+      <pubDate>{{ item.published_date|format_date_string }}</pubDate>
       <category>Podcasts</category>
     </item>
     {% endfor %}

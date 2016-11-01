@@ -18,12 +18,12 @@ home_page = Blueprint('home_page', __name__, template_folder='templates')
 def serve_channel_podcast(username):
     limit = request.args.get("limit")
     podcast, upload_playlist = fetcher.get_user_data(username)
-    podcast["episodes"] = fetcher.get_video_information(upload_playlist, limit)
+    podcast["episodes"], newest_video = fetcher.get_videos(upload_playlist, limit)
 
     xml = render_template(
         'basefeed.rss',
         # TODO sort the videos and get most recent date
-        build_date=jinja_filters.format_date(datetime.date.today()),
+        build_date=newest_video,
         podcast=podcast
     )
     return Response(xml, mimetype='text/xml')
@@ -33,12 +33,12 @@ def serve_channel_podcast(username):
 def serve_playlist_podcast(list_id):
     limit = request.args.get("limit")
     podcast, upload_playlist = fetcher.get_playlist_data(list_id)
-    podcast["episodes"] = fetcher.get_video_information(upload_playlist, limit)
+    podcast["episodes"], newest_video = fetcher.get_videos(upload_playlist, limit)
 
     xml = render_template(
         'basefeed.rss',
         # TODO sort the videos and get most recent date
-        build_date=jinja_filters.format_date(datetime.date.today()),
+        build_date=newest_video,
         podcast=podcast
     )
     return Response(xml, mimetype='text/xml')
