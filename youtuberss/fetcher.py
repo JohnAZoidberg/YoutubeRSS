@@ -15,6 +15,7 @@ converturl = basefolder + 'converter/file/'
 database_path = config["db_path"]
 
 
+# TODO prevent from running to long and fetch only 50 more than are in the DB
 def _build_url(request):
     return baseurl + request + api_suffix
 
@@ -38,7 +39,7 @@ def _extract_video_info(vid, conn):
 
 def get_user_data(name):
     url = _build_url('/channels?' +
-                    'part=snippet%2CcontentDetails&forUsername=' + name)
+                     'part=snippet%2CcontentDetails&forUsername=' + name)
     response = urllib.urlopen(url).read()
     itemJson = json.loads(response)
     channel = itemJson['items'][0]
@@ -103,7 +104,6 @@ def get_videos(playlist_id, limit=None):
             except:
                 print "VideoId: ", vid['snippet']['resourceId']['videoId']
                 conn.commit()
-                conn.close()
                 continue
                 # raise
             print "VideoId: ", vid['snippet']['resourceId']['videoId']
