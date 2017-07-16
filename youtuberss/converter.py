@@ -7,8 +7,8 @@ def get_video_info(video_id, action="location"):
     baseurl = "https://www.youtube.com/watch?v="
     url = baseurl + video_id
     video = pafy.new(url)
-    print video.duration
-    print video.length
+    print(video.duration)
+    print(video.length)
     for s in video.audiostreams:
         if s.extension == 'm4a':
             if action == 'size':

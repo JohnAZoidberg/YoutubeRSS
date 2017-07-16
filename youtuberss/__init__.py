@@ -1,16 +1,13 @@
 #!/usr/bin/python -u
 # coding=utf-8
-import sys
-reload(sys)
-sys.setdefaultencoding("utf8")
 import cgitb
 cgitb.enable()  # Displays any errors
 
 from inspect import getmembers, isfunction
 
-from home import home_page
-from converter import converter_page
-import jinja_filters
+from .home import home_page
+from .converter import converter_page
+from . import jinja_filters
 
 from flask import Flask
 

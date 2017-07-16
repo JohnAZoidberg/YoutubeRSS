@@ -1,18 +1,21 @@
 #!/usr/bin/python -u
 # coding=utf-8
-import sys
-reload(sys)
-sys.setdefaultencoding("utf8")
-
 import datetime
 
 from flask import Blueprint, render_template, jsonify, Response, request
 
-import fetcher
-import jinja_filters
+from . import fetcher
+from . import jinja_filters
 
 home_page = Blueprint('home_page', __name__, template_folder='templates')
 
+@home_page.route('/', methods=['GET'])
+def home():
+    return """
+    Welcome!<br>
+    At /list/<playlistid> you can find the feed of a playlist.<br>
+    At /user/<username> you can find the feed of this user.
+    """
 
 @home_page.route('/user/<username>', methods=['GET'])
 def serve_channel_podcast(username):

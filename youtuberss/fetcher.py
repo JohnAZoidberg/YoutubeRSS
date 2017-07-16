@@ -1,11 +1,11 @@
 #!/usr/bin/python
-import urllib
-import urllib2
 import json
 import sqlite3
 
-import converter
-from config import config
+import requests
+
+from . import converter
+from .config import config
 
 api_key = config["api_key"]
 api_suffix = '&key=' + api_key
@@ -40,8 +40,8 @@ def _extract_video_info(vid, conn):
 def get_user_data(name):
     url = _build_url('/channels?' +
                      'part=snippet%2CcontentDetails&forUsername=' + name)
-    response = urllib.urlopen(url).read()
-    itemJson = json.loads(response)
+    response = requests.get(url)
+    itemJson = response.json()
     channel = itemJson['items'][0]
     # channelId = channel['id']
 
@@ -57,8 +57,8 @@ def get_user_data(name):
 
 def get_playlist_data(uploadPlaylist):
     url = _build_url('/playlists?part=snippet&id=' + uploadPlaylist)
-    response = urllib.urlopen(url).read()
-    itemJson = json.loads(response)
+    response = requests.get(url)
+    itemJson = response.json()
     playlist = itemJson['items'][0]['snippet']
 
     podcast = {}
@@ -92,21 +92,21 @@ def get_videos(playlist_id, limit=None):
         # If the user subscribed to more than 50 channels
         # we have to make multiple requests here
         # which can only be fetched one after another.
-        response = urllib2.urlopen(url + next_page).read()
-        data = json.loads(response)
+        response = requests.get(url + next_page)
+        data = response.json()
         vidsBatch = data['items']
         for vid in vidsBatch:
             try:
-                print "VideoId: ", vid['snippet']['resourceId']['videoId']
+                print("VideoId: ", vid['snippet']['resourceId']['videoId'])
                 video = _extract_video_info(vid, conn)
             except IOError:
                 continue
             except:
-                print "VideoId: ", vid['snippet']['resourceId']['videoId']
+                print("VideoId: ", vid['snippet']['resourceId']['videoId'])
                 conn.commit()
                 continue
                 # raise
-            print "VideoId: ", vid['snippet']['resourceId']['videoId']
+            print("VideoId: ", vid['snippet']['resourceId']['videoId'])
             vids.append(video)
             if newest_date is None:
                 newest_date = video['published_date']
