@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss
+        xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+        xmlns:atom="http://www.w3.org/2005/Atom"
+        version="2.0">
+  <channel>
+    <link>{{ podcast.url }}</link>
+    <language>en-us</language><!-- not really general -->
+    <!--<image>
+      <url>{{ podcast.thumbnail }}</url>
+      <title>Playlist thumbnail</title>
+      <link>{{ podcast.url }}</link>
+    </image>-->
+    <itunes:image href="{{ podcast.thumbnail }}" />
+    <title>{{ podcast.title|e }}</title>
+    <itunes:explicit>no</itunes:explicit>
+    <atom:link href="{{ podcast.url }}" rel="self" type="application/rss+xml" />
+    <lastBuildDate>{{ build_date|format_date_string }}</lastBuildDate>
+    <description>{{ podcast.description|cdata }}</description>
+    <itunes:author>{{ podcast.title|e }}</itunes:author>
+    <itunes:owner><itunes:name>{{ podcast.title|e }}</itunes:name></itunes:owner>
+    <itunes:summary>{{ podcast.description|cdata }}</itunes:summary>
+    <itunes:subtitle>{{ podcast.description|shorten|cdata }}</itunes:subtitle>
+    <!--
+            <copyright>Listen to later 2016</copyright>
+            <itunes:author>Listen to later</itunes:author><itunes:owner><itunes:name>Listen to later</itunes:name></itunes:owner><itunes:explicit>No</itunes:explicit>
+            <itunes:owner><itunes:name>Listen to later</itunes:name></itunes:owner>
+            <itunes:category text="News &amp; Politics"></itunes:category>
+    -->
+    {% for item in podcast.episodes %}
+    <item>
+      <title>{{ item.title|e }}</title>
+      <link>{{ item.url }}</link>
+      <description>{{ item.description|cdata }}</description>
+      <itunes:summary>{{ item.description|cdata }}</itunes:summary>
+      <itunes:subtitle>{{ item.description|shorten|cdata }}</itunes:subtitle>
+      <enclosure url="{{ item.file_url }}" type="audio/mp4" length="{{ item.length }}" />
+      <guid>{{ item.file_url }}</guid>
+      <itunes:duration>{{ item.duration }}</itunes:duration>
+      <pubDate>{{ item.published_date|format_date_string }}</pubDate>
+      <category>Podcasts</category>
+    </item>
+    {% endfor %}
+  </channel>
+</rss>
