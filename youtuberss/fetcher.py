@@ -10,7 +10,7 @@ BASEURL = 'https://www.googleapis.com/youtube/v3'
 
 # TODO prevent from running to long and fetch only 50 more than are in the DB
 class Fetcher:
-    def __init__(config_file):
+    def __init__(self, config_file):
         with open(config_file) as f:
             config = json.load(f)
 
@@ -18,14 +18,14 @@ class Fetcher:
         basefolder = config["flask_root"]
         self.database_path = config["db_path"]
 
-        api_suffix = '&key=' + api_key
+        self.api_suffix = '&key=' + api_key
         self.converturl = basefolder + 'converter/file/'
         pass
 
     def _build_url(self, request):
         return BASEURL + request + self.api_suffix
 
-    def _extract_video_info(vid, conn):
+    def _extract_video_info(self, vid, conn):
         video = {}
         snippet = vid['snippet']
         video["published_date"] = snippet['publishedAt']
@@ -36,13 +36,13 @@ class Fetcher:
         video["url"] = 'https://www.youtube.com/watch?v=' + video["id"]
 
         # get size and duration
-        info = _get_cached_video_info(video["id"], conn)
+        info = self._get_cached_video_info(video["id"], conn)
         video["length"] = info["size"]
         video["duration"] = info["duration"]
         return video
 
 
-    def get_data(url):
+    def get_data(self, url):
         response = urllib.urlopen(url).read()
         itemJson = json.loads(response)
         channel = itemJson['items'][0]
@@ -57,15 +57,15 @@ class Fetcher:
         return podcast, upload_playlist
 
 
-    def get_channel_data(channelId):
-        url = _build_url('/channels?' +
+    def get_channel_data(self, channelId):
+        url = self._build_url('/channels?' +
                          'part=snippet%2CcontentDetails&id=' + channelId)
-        return get_data(url)
+        return self.get_data(url)
 
-    def get_user_data(name):
-        url = _build_url('/channels?' +
+    def get_user_data(self, name):
+        url = self._build_url('/channels?' +
                          'part=snippet%2CcontentDetails&forUsername=' + name)
-        return get_data(url)
+        return self.get_data(url)
 
 
     def get_playlist_data(self, uploadPlaylist):
@@ -92,7 +92,7 @@ class Fetcher:
                     duration INT                 NOT NULL
                 );''')
         conn.commit()
-        url = _build_url('/playlistItems' +
+        url = self._build_url('/playlistItems' +
                          '?part=snippet%2CcontentDetails' +
                          '&maxResults=50&playlistId=' + playlist_id)
         vids = []
@@ -111,7 +111,7 @@ class Fetcher:
             for vid in vidsBatch:
                 try:
                     print "VideoId: ", vid['snippet']['resourceId']['videoId']
-                    video = _extract_video_info(vid, conn)
+                    video = self._extract_video_info(vid, conn)
                 except IOError:
                     continue
                 except:
@@ -137,7 +137,7 @@ class Fetcher:
         return vids, newest_date
 
 
-    def _get_cached_video_info(video_id, conn):
+    def _get_cached_video_info(self, video_id, conn):
             cur = conn.execute('''SELECT id, size, duration FROM videos
                                   WHERE id = ?''', (video_id,))
             video = cur.fetchone()
