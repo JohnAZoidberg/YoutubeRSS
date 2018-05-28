@@ -8,7 +8,7 @@ import datetime
 
 from flask import Blueprint, render_template, jsonify, Response, request
 
-import fetcher
+from fetcher import Fetcher
 import jinja_filters
 
 home_page = Blueprint('home_page', __name__, template_folder='templates')
@@ -29,6 +29,7 @@ def serve(podcast, playlist, limit):
 @home_page.route('/channel/<channelId>', methods=['GET'])
 def serve_channel_podcast(channelId):
     limit = request.args.get("limit")
+    fetcher = Fetcher(request.environ['YOUTUBERSS_CONFIG'])
     podcast, upload_playlist = fetcher.get_channel_data(channelId)
     return serve(podcast, upload_playlist, limit)
 
@@ -36,6 +37,7 @@ def serve_channel_podcast(channelId):
 @home_page.route('/user/<username>', methods=['GET'])
 def serve_user_podcast(username):
     limit = request.args.get("limit")
+    fetcher = Fetcher(request.environ['YOUTUBERSS_CONFIG'])
     podcast, upload_playlist = fetcher.get_user_data(username)
     return serve(podcast, upload_playlist, limit)
 
@@ -43,5 +45,6 @@ def serve_user_podcast(username):
 @home_page.route('/list/<list_id>', methods=['GET'])
 def serve_playlist_podcast(list_id):
     limit = request.args.get("limit")
+    fetcher = Fetcher(request.environ['YOUTUBERSS_CONFIG'])
     podcast, upload_playlist = fetcher.get_playlist_data(list_id)
     return serve(podcast, upload_playlist, limit)
