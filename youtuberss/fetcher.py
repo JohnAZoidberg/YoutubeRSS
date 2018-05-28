@@ -37,13 +37,29 @@ def _extract_video_info(vid, conn):
     return video
 
 
+def get_channel_data(channelId):
+    url = _build_url('/channels?' +
+                     'part=snippet%2CcontentDetails&id=' + channelId)
+    response = urllib.urlopen(url).read()
+    itemJson = json.loads(response)
+    channel = itemJson['items'][0]
+
+    podcast = {}
+    podcast["url"] = 'https://www.youtube.com/channel/' + channelId
+    podcast["thumbnail"] = channel['snippet']['thumbnails']['high']['url']
+    podcast["title"] = channel['snippet']['title']
+    podcast["description"] = channel['snippet']['description']
+    upload_playlist = \
+        channel['contentDetails']['relatedPlaylists']['uploads']
+    return podcast, upload_playlist
+
+
 def get_user_data(name):
     url = _build_url('/channels?' +
                      'part=snippet%2CcontentDetails&forUsername=' + name)
     response = urllib.urlopen(url).read()
     itemJson = json.loads(response)
     channel = itemJson['items'][0]
-    # channelId = channel['id']
 
     podcast = {}
     podcast["url"] = 'https://www.youtube.com/user/' + name
