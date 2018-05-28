@@ -37,15 +37,13 @@ def _extract_video_info(vid, conn):
     return video
 
 
-def get_channel_data(channelId):
-    url = _build_url('/channels?' +
-                     'part=snippet%2CcontentDetails&id=' + channelId)
+def get_data(url):
     response = urllib.urlopen(url).read()
     itemJson = json.loads(response)
     channel = itemJson['items'][0]
 
     podcast = {}
-    podcast["url"] = 'https://www.youtube.com/channel/' + channelId
+    podcast["url"] = 'https://www.youtube.com/channel/' + channel['id']
     podcast["thumbnail"] = channel['snippet']['thumbnails']['high']['url']
     podcast["title"] = channel['snippet']['title']
     podcast["description"] = channel['snippet']['description']
@@ -53,22 +51,16 @@ def get_channel_data(channelId):
         channel['contentDetails']['relatedPlaylists']['uploads']
     return podcast, upload_playlist
 
+
+def get_channel_data(channelId):
+    url = _build_url('/channels?' +
+                     'part=snippet%2CcontentDetails&id=' + channelId)
+    return get_data(url)
 
 def get_user_data(name):
     url = _build_url('/channels?' +
                      'part=snippet%2CcontentDetails&forUsername=' + name)
-    response = urllib.urlopen(url).read()
-    itemJson = json.loads(response)
-    channel = itemJson['items'][0]
-
-    podcast = {}
-    podcast["url"] = 'https://www.youtube.com/user/' + name
-    podcast["thumbnail"] = channel['snippet']['thumbnails']['high']['url']
-    podcast["title"] = channel['snippet']['title']
-    podcast["description"] = channel['snippet']['description']
-    upload_playlist = \
-        channel['contentDetails']['relatedPlaylists']['uploads']
-    return podcast, upload_playlist
+    return get_data(url)
 
 
 def get_playlist_data(uploadPlaylist):
