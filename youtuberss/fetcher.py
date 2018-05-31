@@ -1,8 +1,8 @@
 #!/usr/bin/python
-import urllib
-import urllib2
 import json
 import sqlite3
+
+import requests
 
 import converter
 
@@ -43,8 +43,7 @@ class Fetcher:
 
 
     def get_data(self, url):
-        response = urllib.urlopen(url).read()
-        itemJson = json.loads(response)
+        itemJson = requests.get(url).json()
         channel = itemJson['items'][0]
 
         podcast = {}
@@ -70,8 +69,7 @@ class Fetcher:
 
     def get_playlist_data(self, uploadPlaylist):
         url = self._build_url('/playlists?part=snippet&id=' + uploadPlaylist)
-        response = urllib.urlopen(url).read()
-        itemJson = json.loads(response)
+        itemJson = requests.get(url).json()
         playlist = itemJson['items'][0]['snippet']
 
         podcast = {}
@@ -105,8 +103,7 @@ class Fetcher:
             # If the user subscribed to more than 50 channels
             # we have to make multiple requests here
             # which can only be fetched one after another.
-            response = urllib2.urlopen(url + next_page).read()
-            data = json.loads(response)
+            data = requests.get(url + next_page).json()
             vidsBatch = data['items']
             for vid in vidsBatch:
                 try:
