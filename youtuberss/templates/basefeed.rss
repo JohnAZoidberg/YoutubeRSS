@@ -16,6 +16,7 @@
     <itunes:explicit>no</itunes:explicit>
     <atom:link href="{{ podcast.url }}" rel="self" type="application/rss+xml" />
     <lastBuildDate>{{ build_date|format_date_string }}</lastBuildDate>
+    <pubDate>{{ build_date|format_date_string }}</pubDate>
     <description>{{ podcast.description|cdata }}</description>
     <itunes:author>{{ podcast.title|e }}</itunes:author>
     <itunes:owner><itunes:name>{{ podcast.title|e }}</itunes:name></itunes:owner>
