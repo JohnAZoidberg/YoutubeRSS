@@ -1,0 +1,12 @@
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+*.md
+*.db
+conf.json
+flake.nix
+flake.lock
+.direnv
+result
