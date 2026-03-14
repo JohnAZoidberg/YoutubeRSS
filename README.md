@@ -1,30 +1,53 @@
 # YoutubeRSS
-With this program you can convert any Youtube playlist or channel to a podcast RSS feed that you can subscribe to with your favourite RSS player.
 
-## Running
-You can run this service in multiple different ways:
+Convert any YouTube playlist or channel into a podcast RSS feed you can subscribe to with your favourite podcast player.
 
-- For debuggin run `youtuberss/__init__.py` directly
-- Use a WSGI server to run the `youtuberss` module
-- Use Docker and build from the `Dockerfile`
-- The recommended deployment (how I use it) however it to use my [NixOS module](https://github.com/JohnAZoidberg/nix-konfiguriert/blob/master/daniel/modules/youtuberss.nix)
+## Configuration
 
-Additionally you need to create a configuration file `conf.json` in the root directory of the project with the following content:
+Create a `conf.json` in the project root (or set `YOUTUBERSS_CONFIG` to point elsewhere):
 
 ```json
 {
-    "api_key": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    "flask_root": "https://youtuberss.example.org",
+    "api_key": "YOUR_YOUTUBE_API_KEY",
+    "flask_root": "https://youtuberss.example.org/",
     "db_path": "local.db"
 }
 ```
 
-## Endpoints
-- `/users/<user_id>?limit=50`
-- `/channel/<channel_id>?limit=50`
-- `/playlist/<playlist_id>?limit=50`
+## Running
 
-As you can see the query parameter `limit` can limit the number of videos that
-are included in the feed.  This is particularly useful for channels or
-playlists with thousands of videos.  The Youtube API limits us to fetch 50
-videos at once and makes it impossible to parallelize this task.
+### With Nix
+
+```bash
+# Development shell with all dependencies
+nix develop
+
+# Run the app directly
+nix run
+```
+
+### With pip
+
+```bash
+pip install -r requirements.txt
+gunicorn --bind 0.0.0.0:8080 --workers 2 --timeout 120 wsgi:app
+```
+
+### With Docker
+
+```bash
+docker build -t youtuberss .
+docker run -p 8080:8080 -v ./conf.json:/app/conf.json youtuberss
+```
+
+## Endpoints
+
+- `/channel/<channel_id>?limit=50`
+- `/user/<username>?limit=50`
+- `/list/<playlist_id>?limit=50`
+
+The `limit` query parameter limits the number of videos included in the feed. Useful for channels or playlists with thousands of videos.
+
+You can also get the audio of a single video directly:
+
+- `/converter/file/<video_id>` — redirects to the audio stream URL
