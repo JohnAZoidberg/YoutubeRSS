@@ -1,13 +1,18 @@
 import logging
 import os
 
-from flask import Blueprint, render_template, Response, request
+from flask import Blueprint, render_template, Response, request, jsonify
 
 from .fetcher import Fetcher
 
 logger = logging.getLogger(__name__)
 
 home_page = Blueprint('home_page', __name__, template_folder='templates')
+
+
+@home_page.errorhandler(LookupError)
+def handle_not_found(e):
+    return jsonify(error=str(e)), 404
 
 
 def serve(fetcher, podcast, playlist, limit):

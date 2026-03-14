@@ -45,6 +45,11 @@ class Fetcher:
 
     def get_data(self, url):
         itemJson = requests.get(url).json()
+        if not itemJson.get('items'):
+            raise LookupError(
+                "YouTube API returned no results. "
+                "Check the channel ID / username and your API key."
+            )
         channel = itemJson['items'][0]
 
         podcast = {}
@@ -69,6 +74,10 @@ class Fetcher:
     def get_playlist_data(self, uploadPlaylist):
         url = self._build_url('/playlists?part=snippet&id=' + uploadPlaylist)
         itemJson = requests.get(url).json()
+        if not itemJson.get('items'):
+            raise LookupError(
+                "YouTube API returned no results for playlist: " + uploadPlaylist
+            )
         playlist = itemJson['items'][0]['snippet']
 
         podcast = {}
