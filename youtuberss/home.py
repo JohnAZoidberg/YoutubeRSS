@@ -1,15 +1,6 @@
-#!/usr/bin/python -u
-# coding=utf-8
-import sys
-reload(sys)
-sys.setdefaultencoding("utf8")
+from flask import Blueprint, render_template, Response, request
 
-import datetime
-
-from flask import Blueprint, render_template, jsonify, Response, request
-
-from fetcher import Fetcher
-import jinja_filters
+from .fetcher import Fetcher
 
 home_page = Blueprint('home_page', __name__, template_folder='templates')
 
@@ -38,8 +29,6 @@ def serve_channel_podcast(channelId):
 def serve_user_podcast(username):
     limit = request.args.get("limit")
     fetcher = Fetcher(request.environ['YOUTUBERSS_CONFIG'])
-    print "What the fuck is going on here"
-    print request.environ['YOUTUBERSS_CONFIG']
     podcast, upload_playlist = fetcher.get_user_data(username)
     return serve(fetcher, podcast, upload_playlist, limit)
 
