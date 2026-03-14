@@ -1,9 +1,12 @@
 import json
+import logging
 import sqlite3
 
 import requests
 
 from . import converter
+
+logger = logging.getLogger(__name__)
 
 BASEURL = 'https://www.googleapis.com/youtube/v3'
 
@@ -101,16 +104,17 @@ class Fetcher:
             data = requests.get(url + next_page).json()
             vidsBatch = data['items']
             for vid in vidsBatch:
+                video_id = vid['snippet']['resourceId']['videoId']
                 try:
-                    print("VideoId:", vid['snippet']['resourceId']['videoId'])
+                    logger.info("Processing video: %s", video_id)
                     video = self._extract_video_info(vid, conn)
                 except IOError:
+                    logger.warning("IOError for video %s, skipping", video_id)
                     continue
                 except Exception:
-                    print("VideoId:", vid['snippet']['resourceId']['videoId'])
+                    logger.warning("Error processing video %s, skipping", video_id, exc_info=True)
                     conn.commit()
                     continue
-                print("VideoId:", vid['snippet']['resourceId']['videoId'])
                 vids.append(video)
                 if newest_date is None:
                     newest_date = video['published_date']

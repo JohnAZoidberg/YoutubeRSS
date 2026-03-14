@@ -1,7 +1,10 @@
+import logging
 from datetime import timedelta
 
 import yt_dlp
 from flask import Blueprint, redirect, jsonify
+
+logger = logging.getLogger(__name__)
 
 _YDL_OPTS = {
     'format': 'bestaudio[ext=m4a]/bestaudio',
@@ -17,6 +20,8 @@ def get_video_info(video_id, action="location"):
 
     duration = str(timedelta(seconds=info.get('duration', 0)))
     filesize = info.get('filesize') or info.get('filesize_approx') or 0
+
+    logger.debug("Video %s: duration=%s filesize=%s", video_id, duration, filesize)
 
     if action == 'size':
         return {"id": video_id, "size": str(filesize), "duration": duration}
