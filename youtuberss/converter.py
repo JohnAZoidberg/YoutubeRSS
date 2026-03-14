@@ -1,20 +1,27 @@
-import pafy
+from datetime import timedelta
+
+import yt_dlp
 from flask import Blueprint, redirect, jsonify
+
+_YDL_OPTS = {
+    'format': 'bestaudio[ext=m4a]/bestaudio',
+    'quiet': True,
+    'no_warnings': True,
+}
 
 
 def get_video_info(video_id, action="location"):
-    baseurl = "https://www.youtube.com/watch?v="
-    url = baseurl + video_id
-    video = pafy.new(url)
-    print(video.duration)
-    print(video.length)
-    for s in video.audiostreams:
-        if s.extension == 'm4a':
-            if action == 'size':
-                return {"id": video_id, "size": str(s.get_filesize()),
-                        "duration": video.duration}
-            else:
-                return s.url
+    url = "https://www.youtube.com/watch?v=" + video_id
+    with yt_dlp.YoutubeDL(_YDL_OPTS) as ydl:
+        info = ydl.extract_info(url, download=False)
+
+    duration = str(timedelta(seconds=info.get('duration', 0)))
+    filesize = info.get('filesize') or info.get('filesize_approx') or 0
+
+    if action == 'size':
+        return {"id": video_id, "size": str(filesize), "duration": duration}
+    else:
+        return info['url']
 
 
 converter_page = Blueprint('converter_page', __name__,
