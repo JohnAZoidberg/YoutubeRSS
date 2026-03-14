@@ -7,7 +7,7 @@ from flask import Blueprint, redirect, jsonify
 logger = logging.getLogger(__name__)
 
 _YDL_OPTS = {
-    'format': 'bestaudio[ext=m4a]/bestaudio',
+    'format': 'bestaudio[ext=m4a]/bestaudio/best',
     'quiet': True,
     'no_warnings': True,
 }
