@@ -24,7 +24,12 @@ def get_video_info(video_id, action="location"):
     logger.debug("Video %s: duration=%s filesize=%s", video_id, duration, filesize)
 
     if action == 'size':
-        return {"id": video_id, "size": str(filesize), "duration": duration}
+        # A size taken from a video+audio fallback format (e.g. when YouTube
+        # temporarily withholds audio-only streams) should not be cached as
+        # authoritative, so report which kind of format it came from.
+        audio_only = info.get('vcodec') in (None, 'none')
+        return {"id": video_id, "size": str(filesize), "duration": duration,
+                "audio_only": audio_only}
     else:
         return info['url']
 

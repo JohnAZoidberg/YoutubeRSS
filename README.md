@@ -14,6 +14,10 @@ Create a `conf.json` in the project root (or set `YOUTUBERSS_CONFIG` to point el
 }
 ```
 
+`db_path` points to a SQLite file used only as a cache for video sizes and
+durations. It is safe to delete at any time and is flushed automatically
+when the cache schema changes.
+
 ## Running
 
 ### With Nix

@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 
 BASEURL = 'https://www.googleapis.com/youtube/v3'
 
+# Bump this whenever the meaning of cached rows changes; older caches are
+# dropped on open. The DB is purely a cache and always safe to delete.
+CACHE_SCHEMA_VERSION = 1
+
 
 # TODO prevent from running to long and fetch only 50 more than are in the DB
 class Fetcher:
@@ -88,15 +92,26 @@ class Fetcher:
         podcast["description"] = playlist['description']
         return podcast, uploadPlaylist
 
-    def get_videos(self, playlist_id, limit=None):
+    def _open_cache(self):
         conn = sqlite3.connect(self.database_path)
+        version = conn.execute('PRAGMA user_version').fetchone()[0]
+        if version < CACHE_SCHEMA_VERSION:
+            logger.info("Cache schema outdated (%d < %d), flushing cache",
+                        version, CACHE_SCHEMA_VERSION)
+            conn.execute('DROP TABLE IF EXISTS videos')
+            conn.execute('PRAGMA user_version = %d' % CACHE_SCHEMA_VERSION)
         conn.execute('''
                 CREATE TABLE IF NOT EXISTS videos
-                    (id       VARCHAR PRIMARY KEY NOT NULL,
-                    size     VARCHAR             NOT NULL,
-                    duration INT                 NOT NULL
+                    (id         VARCHAR PRIMARY KEY NOT NULL,
+                    size       VARCHAR             NOT NULL,
+                    duration   INT                 NOT NULL,
+                    audio_only INT                 NOT NULL
                 );''')
         conn.commit()
+        return conn
+
+    def get_videos(self, playlist_id, limit=None):
+        conn = self._open_cache()
         url = self._build_url('/playlistItems' +
                          '?part=snippet%2CcontentDetails' +
                          '&maxResults=50&playlistId=' + playlist_id)
@@ -141,17 +156,29 @@ class Fetcher:
         return vids, newest_date
 
     def _get_cached_video_info(self, video_id, conn):
-        cur = conn.execute('''SELECT id, size, duration FROM videos
-                              WHERE id = ?''', (video_id,))
+        cur = conn.execute('''SELECT id, size, duration, audio_only
+                              FROM videos WHERE id = ?''', (video_id,))
         video = cur.fetchone()
-        if video is None:
-            info = converter.get_video_info(video_id, action="size")
-            conn.execute(
-                '''INSERT INTO videos (id, size, duration)
-                   VALUES (?, ?, ?)''',
-                (video_id, info['size'], info["duration"])
-            )
-            return info
-        else:
+        # A row derived from a video+audio fallback format is kept as a
+        # best-effort value but re-checked on every use, so the cache heals
+        # itself once YouTube serves audio-only streams again.
+        if video is not None and video[3]:
             return {"id": video_id, "size": video[1],
                     "duration": video[2]}
+
+        info = converter.get_video_info(video_id, action="size")
+        if video is None:
+            conn.execute(
+                '''INSERT INTO videos (id, size, duration, audio_only)
+                   VALUES (?, ?, ?, ?)''',
+                (video_id, info['size'], info["duration"],
+                 int(info["audio_only"]))
+            )
+        else:
+            conn.execute(
+                '''UPDATE videos SET size = ?, duration = ?, audio_only = ?
+                   WHERE id = ?''',
+                (info['size'], info["duration"], int(info["audio_only"]),
+                 video_id)
+            )
+        return info
