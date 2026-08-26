@@ -38,14 +38,19 @@ converter_page = Blueprint('converter_page', __name__,
                            template_folder='templates')
 
 
+@converter_page.errorhandler(yt_dlp.utils.DownloadError)
+def handle_download_error(e):
+    # Covers unknown/removed/private videos (and, less commonly, upstream
+    # network failures). Either way the requested audio is not available.
+    return jsonify(error=str(e)), 404
+
+
 @converter_page.route('/converter/file/<video_id>', methods=['GET'])
 def get_file(video_id):
-    # TODO handle empty video_id
     url = get_video_info(video_id, action="location")
     return redirect(url)
 
 
 @converter_page.route('/converter/size/<video_id>', methods=['GET'])
 def get_size(video_id):
-    # TODO handle empty video_id
     return jsonify(get_video_info(video_id, action="size"))
